@@ -7,7 +7,6 @@ const prismadb = require("../prisma-client");
 exports.createPayment = ctrlWrapper(async(req, res) => {
   const { tarrifName, amount } = req.body;
 
-  // Генерація унікального номера замовлення
   const orderReference = `ORDER_${Date.now()}`;
   const orderDate = Math.floor(Date.now() / 1000);
 
