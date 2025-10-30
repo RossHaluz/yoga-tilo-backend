@@ -1,68 +1,101 @@
-const { httpError, ctrlWrapper } = require("../helpers");
+const {  ctrlWrapper, generateSignature, verifySignature } = require("../helpers");
 const prismadb = require("../prisma-client");
-const crypto = require('crypto');
+
+  const MERCHANT_ACCOUNT = process.env.WAYFORPAY_MERCHANT_ACCOUNT;
+  const MERCHANT_DOMAIN = process.env.WAYFORPAY_DOMAIN;
 
 exports.createPayment = ctrlWrapper(async(req, res) => {
-    const { tarrifName, amount } = req.body;
+  const { tarrifName, amount } = req.body;
 
-      const merchantAccount = process.env.WAYFORPAY_MERCHANT_ACCOUNT;
-    const merchantSecret = process.env.WAYFORPAY_SECRET_KEY;
-    const merchantDomainName = process.env.FRONTEND_URL.replace(
-      /^https?:\/\//,
-      ""
-    ); 
+  // Генерація унікального номера замовлення
+  const orderReference = `ORDER_${Date.now()}`;
+  const orderDate = Math.floor(Date.now() / 1000);
 
-      const orderReference = `ORDER_${Date.now()}`;
-      const orderDate = Math.floor(Date.now() / 1000);
+   const paymentData = {
+     merchantAccount: MERCHANT_ACCOUNT,
+     merchantDomainName: MERCHANT_DOMAIN,
+     orderReference: orderReference,
+     orderDate: orderDate,
+     amount: amount,
+     currency: "UAH",
+     productName: [tarrifName],
+     productCount: [1],
+     productPrice: [amount],
+     // URL для редиректу після оплати
+     serviceUrl: `${process.env.BACKEND_URL}/api/payment/callback`,
+     returnUrl: `${process.env.FRONTEND_URL}/payment/success/${orderReference}`,
+   };
 
-      const productName = [tarrifName];
-      const productCount = ["1"];
-      const productPrice = [Number(amount).toFixed(2)];
+    paymentData.merchantSignature = generateSignature(paymentData);
 
-        const signatureArray = [
-          merchantAccount,
-          merchantDomainName,
-          orderReference,
-          String(orderDate),
-          Number(amount).toFixed(2),
-          "UAH",
-          ...productName,
-          ...productCount,
-          ...productPrice,
-        ];
+    await prismadb.client.create({
+      data: {
+        orderDate,
+        orderReference,
+        productName: tarrifName,
+        productCount: 1,
+        productPrice: amount
+      }
+    })
 
-        const signatureString = signatureArray.join(";");
-
-        const merchantSignature = crypto
-          .createHmac("md5", merchantSecret)
-          .update(signatureString)
-          .digest("hex");
-
-        const paymentData = {
-          merchantAccount,
-          merchantDomainName,
-          orderReference,
-          orderDate,
-          amount: Number(amount).toFixed(2),
-          currency: "UAH",
-          productName,
-          productCount,
-          productPrice,
-          merchantSignature,
-          serviceUrl: `${process.env.BACKEND_URL}/api/wayforpay/callback`,
-          returnUrl: `${process.env.FRONTEND_URL}/payment-result`,
-        };
-
-        return res.status(201).json(paymentData);
+  return res.status(201).json(paymentData);
 });
 
 exports.callbackPay = ctrlWrapper(async (req, res) =>{
-        const body = req.body;
-        console.log("WAYFORPAY CALLBACK BODY:", body);
+          const paymentData = req.body;
+          console.log("Payment callback received:", paymentData);
 
-        const { transactionStatus, orderReference, reason } = body;
+           if (!verifySignature(paymentData)) {
+             console.error("Invalid signature");
+             return res.status(400).json({
+               orderReference: paymentData.orderReference,
+               status: "decline",
+               time: Math.floor(Date.now() / 1000),
+             });
+           }
 
-        return res
-          .status(200)
-          .json({ orderReference, status: transactionStatus, reason });
+         if (paymentData.transactionStatus === "Approved") {
+           console.log("Payment approved:", paymentData.orderReference);
+
+           
+           res.json({
+             orderReference: paymentData.orderReference,
+             status: "accept",
+             time: Math.floor(Date.now() / 1000),
+           });
+         } else {
+           console.log("Payment declined:", paymentData.orderReference);
+
+           res.json({
+             orderReference: paymentData.orderReference,
+             status: "decline",
+             time: Math.floor(Date.now() / 1000),
+           });
+         }
+
+          await prismadb.client.update({
+            where: {
+              orderReference: paymentData.orderReference,
+            },
+            data: {
+              transactionStatus: paymentData.transactionStatus,
+            },
+          });
 });
+
+exports.getOrderStatus = ctrlWrapper(async (req, res) => {
+  const {orderReference} = req.params;
+
+  const orderStatus = await prismadb.client.findFirst({
+    where: {
+      orderReference
+    }, 
+    select: {
+      transactionStatus: true
+    }
+  })
+
+  console.log(orderStatus);
+
+  return res.status(200).json(orderStatus);
+})
