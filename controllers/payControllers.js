@@ -66,7 +66,7 @@ exports.createPayment = ctrlWrapper(async (req, res) => {
     productName: tarrifName,
     productCount: 1,
     productPrice: amount,
-    serviceUrl: `${process.env.BACKEND_URL}/api/payment/callback`,
+    serviceUrl: `${process.env.BACKEND_URL}/api/wayforpay/callback`,
     returnUrl: `${process.env.FRONTEND_URL}/payment/success/${orderReference}`,
   };
 
