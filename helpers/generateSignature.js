@@ -2,7 +2,7 @@ const crypto = require("crypto");
 
 // Функція для генерації підпису
 function generateSignature(data) {
-    const MERCHANT_SECRET_KEY = process.env.WAYFORPAY_SECRET_KEY;
+    const MERCHANT_SECRET_KEY = "flk3409refn54t54t*FNJRET";
     
   const signatureString = [
     data.merchantAccount,
