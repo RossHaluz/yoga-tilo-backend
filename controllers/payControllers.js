@@ -72,7 +72,6 @@ exports.createPayment = ctrlWrapper(async (req, res) => {
 
   paymentData.merchantSignature = generateSignature(paymentData);
 
-  // Зберігаємо замовлення у БД
   await prismadb.client.create({
     data: {
       orderDate,
