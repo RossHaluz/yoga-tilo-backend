@@ -8,8 +8,8 @@ const payRoute = require("./routers/pay");
 const app = express();
 
 app.use(express.json());
-
 app.use(cors());
+
 app.use("/api/wayforpay", payRoute);
 
 app.use((req, res) => {

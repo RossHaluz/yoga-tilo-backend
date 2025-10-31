@@ -29,6 +29,7 @@ exports.createPayment = ctrlWrapper(async(req, res) => {
 
     await prismadb.client.create({
       data: {
+        orderDate,
         orderReference,
         productName: tarrifName,
         productCount: 1,
