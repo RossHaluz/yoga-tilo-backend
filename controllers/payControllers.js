@@ -90,9 +90,17 @@ exports.createPayment = ctrlWrapper(async (req, res) => {
 
 // Callback від WayForPay
 exports.callbackPay = ctrlWrapper(async (req, res) => {
-  const paymentData = req.body;
-  console.log("Payment callback received:", paymentData);
+  let paymentData = req.body;
 
+   if (
+     Object.keys(paymentData).length === 1 &&
+     paymentData[Object.keys(paymentData)[0]] === ""
+   ) {
+     paymentData = JSON.parse(Object.keys(paymentData)[0]);
+   }
+
+     console.log("Payment callback received:", paymentData);
+     
   if (!verifySignature(paymentData)) {
     console.error("Invalid signature");
     return res.status(400).json({
@@ -110,6 +118,8 @@ exports.callbackPay = ctrlWrapper(async (req, res) => {
     where: { orderReference: paymentData.orderReference },
     data: { transactionStatus: paymentData.transactionStatus },
   });
+
+   console.log("✅ Payment status updated in DB");
 
   res.json({
     orderReference: paymentData.orderReference,
