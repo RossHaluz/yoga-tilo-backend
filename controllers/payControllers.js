@@ -132,7 +132,10 @@ exports.callbackPay = ctrlWrapper(async (req, res) => {
 
   console.log(updateClient);
 
-  if(!updateClient) throw httpError(400, "Something went wrong");
+  if(!updateClient) {
+    console.log('Client is not update');
+    throw httpError(400, "Something went wrong");
+  };
 
    console.log("✅ Payment status updated in DB");
 

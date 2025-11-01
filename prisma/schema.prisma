@@ -11,7 +11,7 @@ model Client {
   id                String   @id @default(uuid())
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  orderReference    String
+  orderReference    String   @unique
   productCount      Int      @default(1)
   productName       String
   productPrice      Int
