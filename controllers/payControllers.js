@@ -1,4 +1,4 @@
-const { ctrlWrapper } = require("../helpers");
+const { ctrlWrapper, httpError } = require("../helpers");
 const prismadb = require("../prisma-client");
 const crypto = require("crypto");
 
@@ -100,7 +100,7 @@ exports.callbackPay = ctrlWrapper(async (req, res) => {
    }
 
      console.log("Payment callback received:", paymentData);
-     
+
   if (!verifySignature(paymentData)) {
     console.error("Invalid signature");
     return res.status(400).json({
@@ -114,10 +114,12 @@ exports.callbackPay = ctrlWrapper(async (req, res) => {
     paymentData.transactionStatus === "Approved" ? "accept" : "decline";
 
   // Оновлюємо статус у БД
-  await prismadb.client.update({
+ const updateClient = await prismadb.client.update({
     where: { orderReference: paymentData.orderReference },
     data: { transactionStatus: paymentData.transactionStatus },
   });
+
+  if(!updateClient) throw httpError(400, "Something went wrong");
 
    console.log("✅ Payment status updated in DB");
 
