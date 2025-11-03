@@ -18,3 +18,17 @@ model Client {
   transactionStatus String
   orderDate         Int
 }
+
+model User {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email String 
+  password String 
+  role Role @default(USER)
+}
+
+enum Role {
+  ADMIN
+  USER
+}

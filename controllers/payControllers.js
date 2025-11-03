@@ -110,27 +110,16 @@ exports.callbackPay = ctrlWrapper(async (req, res) => {
     });
   }
 
-     console.log("typeof", typeof paymentData);
 
   const status =
     paymentData.transactionStatus === "Approved" ? "accept" : "decline";
 
-    console.log(status);
-
-    const findClient = await prismadb.client.findFirst({
-      where: {
-        orderReference: paymentData.orderReference,
-      },
-    });
-
-    console.log(findClient);
 
  const updateClient = await prismadb.client.update({
     where: { orderReference: paymentData.orderReference },
     data: { transactionStatus: paymentData.transactionStatus },
   });
 
-  console.log(updateClient);
 
   if(!updateClient) {
     console.log('Client is not update');
