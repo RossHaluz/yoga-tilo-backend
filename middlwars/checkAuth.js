@@ -19,22 +19,24 @@ const checkAuth = (req, res, next) => {
     });
 }
 
-const authorizationRole  = (role) => {
-    return ctrlWrapper(async (req, res, next) => {
-        const userId = req.userId;
-        const user = await prismadb.user.findUnique({
-            where: {
-                id: userId
-            }
-        });
+const authorizationRole = (role) => {
+  return async (req, res, next) => {
+    const userId = req.userId;
+    const user = await prismadb.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
 
-        if(!user) throw httpError(404, 'User not found');
-        
-        if(user?.role !== role) throw httpError(403, "Forbidden - Insufficient permissions");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role !== role)
+      return res
+        .status(403)
+        .json({ message: "Forbidden - Insufficient permissions" });
 
-        next();
-    })
-}
+    next();
+  };
+};
 
 module.exports = {
     checkAuth,
