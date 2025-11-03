@@ -2,7 +2,7 @@ const { hashPassword } = require("../helpers");
 const prismadb = require("../prisma-client");
 
 async function main() {
-    const hashedPassword = await bcrypt.hash("nastifit0602", 10);
+    const hashedPassword = await hashPassword("nastifit0602");
   const adminUser = await prismadb.user.upsert({
     where: {
       email: "admin@nasti.fit",
